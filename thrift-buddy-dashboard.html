@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thrift Buddy — Savers 3 Carts</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #F7F4EF;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE8;
+    --ink: #1A1714;
+    --ink-mid: #5C574F;
+    --ink-light: #9B958C;
+    --accent: #C4622D;
+    --accent-light: #F2E4D9;
+    --green: #2D6A4F;
+    --green-light: #D8F3DC;
+    --yellow: #B8860B;
+    --yellow-light: #FFF8DC;
+    --border: #E0DAD2;
+    --high: #C4622D;
+    --med: #B8860B;
+    --low: #6B8F71;
+    --threshold: #9B958C;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--ink);
+    color: white;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-left h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .header-left .sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: #A09890;
+    margin-top: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  .header-stats {
+    display: flex;
+    gap: 24px;
+  }
+
+  .stat {
+    text-align: right;
+  }
+
+  .stat-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+    color: #A09890;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* CONTROLS */
+  .controls {
+    padding: 16px 32px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .filter-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--ink-mid);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--ink); color: white; border-color: var(--ink); }
+
+  .filter-label {
+    font-size: 0.7rem;
+    color: var(--ink-light);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-right: 4px;
+  }
+
+  .spacer { flex: 1; }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    color: var(--ink-mid);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  /* TABLE WRAPPER */
+  .table-wrapper {
+    padding: 24px 32px;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  thead tr {
+    background: var(--ink);
+    color: white;
+  }
+
+  thead th {
+    padding: 11px 14px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  thead th.check-col {
+    text-align: center;
+    min-width: 70px;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:hover { background: var(--surface2); }
+
+  tbody tr.below-threshold {
+    opacity: 0.5;
+  }
+
+  tbody tr.done {
+    background: var(--green-light);
+  }
+
+  td {
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    vertical-align: middle;
+  }
+
+  td.check-col {
+    text-align: center;
+  }
+
+  /* RANK */
+  .rank {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--ink-light);
+    font-weight: 500;
+  }
+
+  /* ITEM NAME */
+  .item-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    line-height: 1.3;
+  }
+
+  .item-note {
+    font-size: 0.72rem;
+    color: var(--ink-mid);
+    margin-top: 2px;
+  }
+
+  .flag {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 4px;
+  }
+
+  .flag-action { background: #FFE4D4; color: #C4622D; }
+  .flag-seasonal { background: #E8F4FD; color: #1565C0; }
+  .flag-shipping { background: #FFF3CD; color: #856404; }
+
+  /* PRIORITY BADGE */
+  .priority {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+
+  .p-high { background: #FDECEA; color: var(--high); border: 1px solid #F5C6C0; }
+  .p-med { background: #FFF8E1; color: var(--yellow); border: 1px solid #FFE082; }
+  .p-low { background: #F1F8F4; color: var(--low); border: 1px solid #C8E6C9; }
+  .p-none { background: var(--surface2); color: var(--threshold); border: 1px solid var(--border); }
+
+  /* PLATFORM BADGE */
+  .platform {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+
+  .plat-ebay { background: #E8F0FE; color: #1A56DB; }
+  .plat-etsy { background: #FDE8E8; color: #C0392B; }
+  .plat-fb { background: #E8EEF9; color: #3B5998; }
+  .plat-both { background: #F3E8FF; color: #7B1FA2; }
+
+  /* PRICE */
+  .price-sell {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--green);
+  }
+
+  .price-cost {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--ink-light);
+  }
+
+  .price-unverified {
+    font-size: 0.62rem;
+    color: var(--yellow);
+    display: block;
+  }
+
+  /* FLIP SPEED */
+  .speed {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--ink-mid);
+  }
+
+  .speed-fast { color: var(--green); }
+  .speed-med { color: var(--yellow); }
+  .speed-slow { color: var(--ink-light); }
+  .speed-seasonal { color: #1565C0; }
+
+  /* CHECKBOXES */
+  .check-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .check-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    cursor: pointer;
+  }
+
+  .check-item input[type="checkbox"] {
+    display: none;
+  }
+
+  .check-box {
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all 0.15s;
+    cursor: pointer;
+    color: transparent;
+  }
+
+  .check-box:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .check-item input:checked + .check-box {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .check-label {
+    font-size: 0.58rem;
+    color: var(--ink-light);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: center;
+    line-height: 1.1;
+  }
+
+  /* STORAGE */
+  .storage-badge {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 3px 8px;
+    color: var(--ink-mid);
+  }
+
+  /* SECTION DIVIDER */
+  .section-header td {
+    background: var(--surface2);
+    padding: 8px 14px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    border-top: 2px solid var(--border);
+  }
+
+  /* STORAGE KEY */
+  .storage-key {
+    padding: 16px 32px 8px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .storage-key-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-light);
+    margin-right: 4px;
+  }
+
+  /* PROGRESS BAR */
+  .progress-section {
+    padding: 12px 32px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .progress-block {
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .progress-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-light);
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--green);
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  /* FOOTER */
+  .footer {
+    padding: 20px 32px;
+    font-size: 0.68rem;
+    color: var(--ink-light);
+    border-top: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .table-wrapper { padding: 12px; }
+    .header { padding: 16px; }
+    .controls { padding: 12px 16px; }
+    .header-stats { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Thrift Buddy</h1>
+    <div class="sub">Savers 3 Carts Haul &nbsp;·&nbsp; KDynamics, Inc. &nbsp;·&nbsp; Ranked by Return Priority</div>
+  </div>
+  <div class="header-stats">
+    <div class="stat">
+      <div class="stat-val" id="stat-listed">0</div>
+      <div class="stat-label">Listed</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-photo">0</div>
+      <div class="stat-label">Pro Photo ✓</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-gathered">0</div>
+      <div class="stat-label">Gathered</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">$337–$641</div>
+      <div class="stat-label">Est. Gross ⚠️</div>
+    </div>
+  </div>
+</div>
+
+<!-- Progress bars -->
+<div class="progress-section" style="background:white; border-bottom:1px solid var(--border);">
+  <div class="progress-block">
+    <div class="progress-label"><span>Gathered for Jessie</span><span id="pct-gathered">0%</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="bar-gathered"></div></div>
+  </div>
+  <div class="progress-block">
+    <div class="progress-label"><span>Batch Photos Done</span><span id="pct-batch">0%</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="bar-batch" style="background:#B8860B"></div></div>
+  </div>
+  <div class="progress-block">
+    <div class="progress-label"><span>Pro Photos Done</span><span id="pct-pro">0%</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="bar-pro" style="background:#1A56DB"></div></div>
+  </div>
+  <div class="progress-block">
+    <div class="progress-label"><span>Listed</span><span id="pct-listed">0%</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="bar-listed" style="background:#2D6A4F"></div></div>
+  </div>
+</div>
+
+<!-- Filter controls -->
+<div class="controls">
+  <span class="filter-label">Filter:</span>
+  <button class="filter-btn active" onclick="filterItems('all', this)">All</button>
+  <button class="filter-btn" onclick="filterItems('high', this)">🔴 High</button>
+  <button class="filter-btn" onclick="filterItems('med', this)">🟡 Med</button>
+  <button class="filter-btn" onclick="filterItems('low', this)">🟢 Low</button>
+  <button class="filter-btn" onclick="filterItems('ebay', this)">eBay</button>
+  <button class="filter-btn" onclick="filterItems('fb', this)">FBMP</button>
+  <button class="filter-btn" onclick="filterItems('etsy', this)">Etsy</button>
+  <button class="filter-btn" onclick="filterItems('gathered', this)">Gathered ✓</button>
+  <button class="filter-btn" onclick="filterItems('unlisted', this)">Not Listed</button>
+  <div class="spacer"></div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#C4622D"></div>High</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#B8860B"></div>Med</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#6B8F71"></div>Low</div>
+  </div>
+</div>
+
+<div class="table-wrapper">
+<table id="main-table">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Item</th>
+      <th>Priority</th>
+      <th>Platform</th>
+      <th>Est. Sell ⚠️</th>
+      <th>Cost</th>
+      <th>Speed</th>
+      <th>Storage</th>
+      <th class="check-col">Gathered</th>
+      <th class="check-col">Batch<br>Photo</th>
+      <th class="check-col">Pro<br>Photo</th>
+      <th class="check-col">Listed</th>
+    </tr>
+  </thead>
+  <tbody id="table-body">
+  </tbody>
+</table>
+</div>
+
+<div class="footer" id="footer-note">
+  ⚠️ All sell prices UNVERIFIED — confirm via eBay sold filter before listing &nbsp;·&nbsp; 
+  Thrift Buddy · KDynamics, Inc. &nbsp;·&nbsp; 
+  <span id="last-updated"></span>
+</div>
+
+<script>
+const items = [
+  {
+    rank: 1,
+    name: "Jesus / Last Supper Lenticular Light Box",
+    note: "Vintage 1960s–70s, metal pierced frame, electric",
+    flags: ["action", "shipping"],
+    flagLabels: ["⚠️ Test plug-in first", "🚢 Fragile — double box"],
+    priority: "HIGH",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 45, sellHigh: 85,
+    cost: 9.99,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Shelf A",
+    category: "high"
+  },
+  {
+    rank: 2,
+    name: "Vintage Stanley Vacuum Bottle / Thermos",
+    note: "Green hammertone, 1960s–80s, cup/lid present",
+    flags: ["action"],
+    flagLabels: ["⚠️ Check bottom for model/date code"],
+    priority: "HIGH",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 35, sellHigh: 65,
+    cost: 11.99,
+    speed: "fast",
+    speedLabel: "Fast",
+    storage: "Shelf A",
+    category: "high"
+  },
+  {
+    rank: 3,
+    name: "Spiritsong Tarot Deck — Paulina Cassidy",
+    note: "Complete deck + guidebook + box, excellent condition",
+    flags: ["action"],
+    flagLabels: ["⚠️ Count 78 cards + guidebook"],
+    priority: "HIGH",
+    platform: "both",
+    platformLabel: "eBay / Etsy",
+    sellLow: 32, sellHigh: 55,
+    cost: 7.99,
+    speed: "fast",
+    speedLabel: "Fast",
+    storage: "Box B",
+    category: "high"
+  },
+  {
+    rank: 4,
+    name: "Remington 'The Scout' Collector Decanter",
+    note: "Blue matte, Jim Beam series, tax stamp #304679981",
+    flags: ["shipping"],
+    flagLabels: ["🚢 Fragile — box carefully"],
+    priority: "HIGH",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 25, sellHigh: 55,
+    cost: 5.99,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Shelf A",
+    category: "high"
+  },
+  {
+    rank: 5,
+    name: "40oz Ombre Insulated Tumbler w/ Handle",
+    note: "Yellow-to-teal — CONFIRM BRAND ON BOTTOM",
+    flags: ["action"],
+    flagLabels: ["⚠️ Stanley or generic? Check bottom NOW"],
+    priority: "HIGH",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 15, sellHigh: 55,
+    cost: 4.99,
+    speed: "fast",
+    speedLabel: "Fast",
+    storage: "Counter",
+    category: "high"
+  },
+  {
+    rank: 6,
+    name: "Ceramic Cowboy Boot Night Light",
+    note: "Brown glazed, cut-out stars, electric plug-in",
+    flags: ["action"],
+    flagLabels: ["⚠️ Test plug-in before listing"],
+    priority: "MED",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 22, sellHigh: 35,
+    cost: 5.99,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Shelf B",
+    category: "med"
+  },
+  {
+    rank: 7,
+    name: "Lap Desk — Wood w/ Rattan Side Pockets",
+    note: "Tilt surface, dual storage pockets, clean condition",
+    flags: ["shipping"],
+    flagLabels: ["🚢 Bulky — FB local or $15–20 box ship"],
+    priority: "MED",
+    platform: "fb",
+    platformLabel: "FBMP",
+    sellLow: 25, sellHigh: 40,
+    cost: 10.99,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Floor Stack",
+    category: "med"
+  },
+  {
+    rank: 8,
+    name: "Demeter Poster — Shout! Factory",
+    note: "Horror film promo poster in tube, 2 sides",
+    flags: ["action"],
+    flagLabels: ["⚠️ Cost TBD — open tube, check condition"],
+    priority: "MED",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 15, sellHigh: 35,
+    cost: 0,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Tube Bin",
+    category: "med"
+  },
+  {
+    rank: 9,
+    name: "Copper Relief Wall Plates (pair)",
+    note: "Cherub + heraldic lion, ~6\" dia, vintage",
+    flags: ["action"],
+    flagLabels: ["⚠️ Check backs for maker marks / country stamp"],
+    priority: "MED",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 15, sellHigh: 35,
+    cost: 3.99,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Shelf B",
+    category: "med"
+  },
+  {
+    rank: 10,
+    name: "Nativity Set — Home for the Holidays",
+    note: "White porcelain w/ gold, boxed — BABY JESUS ARM BROKEN",
+    flags: ["seasonal", "shipping"],
+    flagLabels: ["🗓️ List by Oct 1", "🚢 Fragile — individual wrap each piece"],
+    priority: "MED",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 18, sellHigh: 30,
+    cost: 6.49,
+    speed: "seasonal",
+    speedLabel: "Seasonal",
+    storage: "Holiday Box",
+    category: "med"
+  },
+  {
+    rank: 11,
+    name: "Artist's Loft Tiger Paint-by-Number Kit",
+    note: "16x20, 46pc — confirm sealed/complete",
+    flags: ["action"],
+    flagLabels: ["⚠️ Verify all paint pots sealed"],
+    priority: "MED",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 18, sellHigh: 25,
+    cost: 4.99,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Shelf B",
+    category: "med"
+  },
+  {
+    rank: 12,
+    name: "Studio Series Watercolor Set — 24 Colors",
+    note: "12ml tubes, appears complete and unused",
+    flags: ["action"],
+    flagLabels: ["⚠️ Count all 24 tubes — any opened kills listing"],
+    priority: "MED",
+    platform: "both",
+    platformLabel: "eBay / Etsy",
+    sellLow: 18, sellHigh: 28,
+    cost: 6.99,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Shelf B",
+    category: "med"
+  },
+  {
+    rank: 13,
+    name: "Belle Maison Jeweled Frame 5x7",
+    note: "Silver-tone, green enamel + rhinestones, HomeGoods origin",
+    flags: ["action"],
+    flagLabels: ["⚠️ Check for missing stones"],
+    priority: "MED",
+    platform: "both",
+    platformLabel: "eBay / Etsy",
+    sellLow: 18, sellHigh: 28,
+    cost: 4.99,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Shelf B",
+    category: "med"
+  },
+  {
+    rank: 14,
+    name: "Bookchair Book / Tablet Stand",
+    note: "UK brand, red fabric easel, white plastic",
+    flags: [],
+    flagLabels: [],
+    priority: "MED",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 12, sellHigh: 20,
+    cost: 2.99,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Shelf B",
+    category: "med"
+  },
+  {
+    rank: 15,
+    name: "Bamboo Marquetry Folk Art — Boy w/ Geese",
+    note: "Framed, black bg, Asian export art 1960s–80s",
+    flags: ["shipping", "action"],
+    flagLabels: ["🚢 Glass frame — careful wrap", "⚠️ Check back for origin label"],
+    priority: "LOW",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 20, sellHigh: 35,
+    cost: 6.99,
+    speed: "slow",
+    speedLabel: "Slow",
+    storage: "Shelf C",
+    category: "low"
+  },
+  {
+    rank: 16,
+    name: "Brushed Nickel Floor Lamp Base",
+    note: "No shade — AMVETS sourced, twisted column",
+    flags: ["shipping"],
+    flagLabels: ["🚢 Local only — too large to ship"],
+    priority: "LOW",
+    platform: "fb",
+    platformLabel: "FBMP",
+    sellLow: 15, sellHigh: 25,
+    cost: 8.98,
+    speed: "slow",
+    speedLabel: "Slow",
+    storage: "Garage",
+    category: "low"
+  },
+  {
+    rank: 17,
+    name: "White Wicker Magazine Basket",
+    note: "Dual loop handles, painted white, good condition",
+    flags: [],
+    flagLabels: [],
+    priority: "LOW",
+    platform: "fb",
+    platformLabel: "FBMP",
+    sellLow: 15, sellHigh: 22,
+    cost: 5.99,
+    speed: "med",
+    speedLabel: "Medium",
+    storage: "Garage",
+    category: "low"
+  },
+  {
+    rank: 18,
+    name: "Insulated Market Basket w/ Aluminum Handles",
+    note: "Brown floral fabric — check inside for brand",
+    flags: ["action"],
+    flagLabels: ["⚠️ Check inside for brand label"],
+    priority: "LOW",
+    platform: "fb",
+    platformLabel: "FBMP",
+    sellLow: 12, sellHigh: 18,
+    cost: 6.99,
+    speed: "slow",
+    speedLabel: "Slow",
+    storage: "Garage",
+    category: "low"
+  },
+  {
+    rank: 19,
+    name: "Tree Branch Art Print — Framed",
+    note: "Black frame, minimalist B&W, no artist mark",
+    flags: [],
+    flagLabels: [],
+    priority: "LOW",
+    platform: "fb",
+    platformLabel: "FBMP",
+    sellLow: 15, sellHigh: 25,
+    cost: 0,
+    speed: "slow",
+    speedLabel: "Slow",
+    storage: "Shelf C",
+    category: "low"
+  },
+  {
+    rank: 20,
+    name: "Beanie Baby Display Tubes (2)",
+    note: "Blue star graphics, branded storage tubes",
+    flags: [],
+    flagLabels: [],
+    priority: "LOW",
+    platform: "ebay",
+    platformLabel: "eBay",
+    sellLow: 8, sellHigh: 15,
+    cost: 1.00,
+    speed: "slow",
+    speedLabel: "Slow",
+    storage: "Bin C",
+    category: "low"
+  },
+];
+
+const belowThreshold = [
+  { name: "Pink Jute Bud Vase", cost: 6.99, note: "Below $15 net threshold" },
+  { name: "Rattan Bowl Basket w/ Metal Rim", cost: 4.49, note: "Below $15 net threshold" },
+  { name: "Dana Simson 12x12 Window Album", cost: 5.99, note: "Below $15 net threshold" },
+  { name: "Simply Travel by Reminisce Kit", cost: 3.99, note: "Below $15 net threshold" },
+  { name: "Beanie Babies Wrapping Paper Rolls (2)", cost: 1.00, note: "Gift wrap — no resale market" },
+];
+
+// State
+const state = {};
+items.forEach(item => {
+  state[item.rank] = { gathered: false, batch: false, pro: false, listed: false };
+});
+
+function platformClass(p) {
+  if (p === 'ebay') return 'plat-ebay';
+  if (p === 'fb') return 'plat-fb';
+  if (p === 'etsy') return 'plat-etsy';
+  return 'plat-both';
+}
+
+function speedClass(s) {
+  if (s === 'fast') return 'speed-fast';
+  if (s === 'med') return 'speed-med';
+  if (s === 'slow') return 'speed-slow';
+  return 'speed-seasonal';
+}
+
+function priorityClass(p) {
+  if (p === 'HIGH') return 'p-high';
+  if (p === 'MED') return 'p-med';
+  if (p === 'LOW') return 'p-low';
+  return 'p-none';
+}
+
+function makeCheckbox(rank, field, label) {
+  const id = `chk-${rank}-${field}`;
+  return `
+    <label class="check-item" for="${id}" onclick="toggleCheck(${rank}, '${field}')">
+      <input type="checkbox" id="${id}">
+      <div class="check-box" id="box-${rank}-${field}">✓</div>
+      <span class="check-label">${label}</span>
+    </label>`;
+}
+
+function toggleCheck(rank, field) {
+  state[rank][field] = !state[rank][field];
+  const box = document.getElementById(`box-${rank}-${field}`);
+  const input = document.getElementById(`chk-${rank}-${field}`);
+  if (state[rank][field]) {
+    box.style.background = '#2D6A4F';
+    box.style.borderColor = '#2D6A4F';
+    box.style.color = 'white';
+    input.checked = true;
+  } else {
+    box.style.background = '';
+    box.style.borderColor = '';
+    box.style.color = 'transparent';
+    input.checked = false;
+  }
+  updateStats();
+  updateRowState(rank);
+}
+
+function updateRowState(rank) {
+  const row = document.getElementById(`row-${rank}`);
+  if (!row) return;
+  if (state[rank].listed) {
+    row.style.background = '#D8F3DC';
+  } else if (state[rank].gathered) {
+    row.style.background = '#FFF8E1';
+  } else {
+    row.style.background = '';
+  }
+}
+
+function updateStats() {
+  const total = items.length;
+  let gathered = 0, batch = 0, pro = 0, listed = 0;
+  items.forEach(item => {
+    if (state[item.rank].gathered) gathered++;
+    if (state[item.rank].batch) batch++;
+    if (state[item.rank].pro) pro++;
+    if (state[item.rank].listed) listed++;
+  });
+
+  document.getElementById('stat-gathered').textContent = gathered;
+  document.getElementById('stat-photo').textContent = pro;
+  document.getElementById('stat-listed').textContent = listed;
+
+  document.getElementById('bar-gathered').style.width = (gathered/total*100)+'%';
+  document.getElementById('bar-batch').style.width = (batch/total*100)+'%';
+  document.getElementById('bar-pro').style.width = (pro/total*100)+'%';
+  document.getElementById('bar-listed').style.width = (listed/total*100)+'%';
+
+  document.getElementById('pct-gathered').textContent = Math.round(gathered/total*100)+'%';
+  document.getElementById('pct-batch').textContent = Math.round(batch/total*100)+'%';
+  document.getElementById('pct-pro').textContent = Math.round(pro/total*100)+'%';
+  document.getElementById('pct-listed').textContent = Math.round(listed/total*100)+'%';
+}
+
+function renderTable(filter = 'all') {
+  const tbody = document.getElementById('table-body');
+  let html = '';
+
+  // Section header
+  html += `<tr class="section-header"><td colspan="12">— Active Items — Ranked by Priority & Return Speed</td></tr>`;
+
+  items.forEach(item => {
+    let show = true;
+    if (filter === 'high' && item.category !== 'high') show = false;
+    if (filter === 'med' && item.category !== 'med') show = false;
+    if (filter === 'low' && item.category !== 'low') show = false;
+    if (filter === 'ebay' && item.platform !== 'ebay' && item.platform !== 'both') show = false;
+    if (filter === 'fb' && item.platform !== 'fb') show = false;
+    if (filter === 'etsy' && item.platform !== 'etsy' && item.platform !== 'both') show = false;
+    if (filter === 'gathered' && !state[item.rank].gathered) show = false;
+    if (filter === 'unlisted' && state[item.rank].listed) show = false;
+
+    if (!show) return;
+
+    const flagsHtml = item.flagLabels.map(f => {
+      let cls = 'flag-action';
+      if (f.includes('🗓️')) cls = 'flag-seasonal';
+      if (f.includes('🚢')) cls = 'flag-shipping';
+      return `<span class="flag ${cls}">${f}</span>`;
+    }).join(' ');
+
+    html += `
+      <tr id="row-${item.rank}" data-category="${item.category}" data-platform="${item.platform}">
+        <td><span class="rank">${String(item.rank).padStart(2,'0')}</span></td>
+        <td>
+          <div class="item-name">${item.name}</div>
+          <div class="item-note">${item.note}</div>
+          ${flagsHtml ? `<div style="margin-top:5px">${flagsHtml}</div>` : ''}
+        </td>
+        <td><span class="priority ${priorityClass(item.priority)}">${item.priority}</span></td>
+        <td><span class="platform ${platformClass(item.platform)}">${item.platformLabel}</span></td>
+        <td>
+          <div class="price-sell">$${item.sellLow}–$${item.sellHigh}</div>
+          <span class="price-unverified">⚠️ UNVERIFIED</span>
+        </td>
+        <td><span class="price-cost">${item.cost === 0 ? 'TBD' : '$'+item.cost.toFixed(2)}</span></td>
+        <td><span class="speed ${speedClass(item.speed)}">${item.speedLabel}</span></td>
+        <td><span class="storage-badge">${item.storage}</span></td>
+        <td class="check-col">${makeCheckbox(item.rank, 'gathered', 'Done')}</td>
+        <td class="check-col">${makeCheckbox(item.rank, 'batch', 'Done')}</td>
+        <td class="check-col">${makeCheckbox(item.rank, 'pro', 'Done')}</td>
+        <td class="check-col">${makeCheckbox(item.rank, 'listed', 'Live')}</td>
+      </tr>`;
+  });
+
+  // Below threshold section
+  if (filter === 'all') {
+    html += `<tr class="section-header"><td colspan="12">— Below Threshold — Not Worth Listing —</td></tr>`;
+    belowThreshold.forEach(item => {
+      html += `
+        <tr class="below-threshold">
+          <td><span class="rank">—</span></td>
+          <td>
+            <div class="item-name">${item.name}</div>
+            <div class="item-note">${item.note}</div>
+          </td>
+          <td><span class="priority p-none">SKIP</span></td>
+          <td>—</td>
+          <td>—</td>
+          <td><span class="price-cost">$${item.cost.toFixed(2)}</span></td>
+          <td>—</td>
+          <td>—</td>
+          <td colspan="4" style="text-align:center;color:var(--ink-light);font-size:0.72rem;">Below $15 net — donate or toss</td>
+        </tr>`;
+    });
+  }
+
+  tbody.innerHTML = html;
+  updateStats();
+}
+
+function filterItems(filter, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable(filter);
+}
+
+// Set last updated
+document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+
+// Initial render
+renderTable('all');
+</script>
+</body>
+</html>
